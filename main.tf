@@ -32,15 +32,37 @@ module "linuxservers" {
   enable_ssh_key                   = true
   ssh_key_values                   = ["ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDKXakUEaLOjvmyFlFnM1VYUbKCRCmFkZvLoOQdi5qhOO6BOeBKkBMcrIgUagONA0qwcxiRRmD44GOoL9s+Y0fNF2Ts2Snzyx1JL2VDUesVwLiwoag7n1UYUInqqghpMiZvorRD9Hgi0IXtWYIE5UkdidL7n5hLd5F3as1xAAvowmBPxjd/3Xfsfs0XrHsgC1v09FW0cZWO/U+6e30O835mME/IXNf+NoZzkFS9wHEFYxOvmGb9ea0JrM5H6eX7WTYNA+w83aTSmm9rYEUDvIfEegnk8iVScij79F6pPuMS302oTFj1qe7Ke/OcnRTzJCgNDQnRpn3Y+bzhksRdWn2jSeKx30ZXmiyea3T/OQoRDM5juJdB40EkNUp6weuvIS2Z4o9JdvIwCN95Ql46oa29YGi1OV+982SS3vb6HlETrXZ4HXlYSSgnHD3jGruSss+Y+odNmv5RG3D525rDXicS86gBRrokfxeH+7iSF2RbW2wdTVC9vnaLi5qQkFJIJd0= training\\student@ROME3-4"]
 
-  vm_size                          = "Standard_D4s_v3"
+  vm_size                          = "Standard_DS1_v2"
   delete_data_disks_on_termination = true
 
-  tags = {
-    environment = "dev"
-    costcenter  = "it"
+}
+  
+  resource "null_resource" "rum-pestertest" {
+      depends_on = [
+        module.linuxservers
+      ]
+   connection {
+    type     = "ssh"
+    user     = "azureuser"
+    private_key = file("~/.ssh/id_rsa")
+    host     = module.linuxservers.public_ip_dns_name[0]
   }
+   provisioner "file" {
+       source = "./scripts/setup-nginx.sh"
+       destination = "/var/tmp/setup-nginx.sh"
+   
+   }
 
-  enable_accelerated_networking = true
+   provisioner "remote-exec" {
+    inline = [
+      "chmod +x /var/tmp/setup-nginx.sh",
+      "/var/tmp/setup-nginx.sh",
+      "echo '====== Provisionner is on its way ===='"
+    ]
+  }
+triggers = {
+    always_run = "${timestamp()}"
+  }
 }
 
 
